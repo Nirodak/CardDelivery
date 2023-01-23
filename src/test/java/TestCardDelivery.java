@@ -1,6 +1,7 @@
 import com.codeborne.selenide.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.openqa.selenium.Keys;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -12,16 +13,17 @@ import static com.codeborne.selenide.Condition.*;
 
 public class TestCardDelivery {
 
-    public void setValueDate(int addedDate) {
-        SelenideElement element = $("[placeholder='Дата встречи']");
-        element.sendKeys("\b\b\b\b\b\b\b\b");
+    public String setValueDate(int addedDate) {
         LocalDate currentDate = LocalDate.now();
         DateTimeFormatter pattern = DateTimeFormatter.ofPattern("dd.MM.yyyy");
         String formattedDate = currentDate.plusDays(addedDate).format(pattern).toString();
-        element.setValue(formattedDate);
+        return formattedDate;
     }
 
     public void setAllValue(String city, int addedDate, String name, String phone) {
+        SelenideElement element = $("[placeholder='Дата встречи']");
+        $("[data-test-id='date'] input").sendKeys(Keys.chord(Keys.SHIFT, Keys.HOME), Keys.BACK_SPACE);
+        element.setValue(setValueDate(addedDate));
         $("[placeholder='Город']").setValue(city);
         $("[name='name']").setValue(name);
         setValueDate(addedDate);
@@ -41,9 +43,14 @@ public class TestCardDelivery {
 
     @Test
     void testValid() {
-        setAllValue("Краснодар", 5, "Иванов", "+79884757770");
+        int addedDate = 5;
+        Configuration.holdBrowserOpen=true;
+        setAllValue("Краснодар", addedDate, "Иванов", "+79884757770");
         clicker();
-        $("[data-test-id='notification']").should(visible, Duration.ofSeconds(15));
+        SelenideElement date = $("[data-test-id='notification']");
+        date.$(".notification__content").shouldHave(Condition.text("Встреча успешно забронирована на "
+                + setValueDate(addedDate)), Duration.ofSeconds(15))
+                .shouldBe(Condition.visible);
     }
 
 
